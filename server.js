@@ -9,12 +9,13 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'users.json');
-let INDEX_HTML;
-try {
-  INDEX_HTML = fs.readFileSync(path.join(__dirname, 'public', 'index.html'));
-} catch (e) {
-  console.error('ERREUR : public/index.html introuvable dans le dépôt. Ajoutez le dossier public/ avec index.html puis redéployez.');
-  INDEX_HTML = Buffer.from('<!doctype html><meta charset="utf-8"><h1>Orbit Duel</h1><p>Fichier public/index.html manquant sur le serveur.</p>');
+let INDEX_HTML = null;
+for (const p of [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')]) {
+  try { INDEX_HTML = fs.readFileSync(p); console.log('Page chargée depuis ' + p); break; } catch (_) {}
+}
+if (!INDEX_HTML) {
+  console.error('ERREUR : index.html introuvable. Placez-le dans public/ (ou à la racine) puis redéployez.');
+  INDEX_HTML = Buffer.from('<!doctype html><meta charset="utf-8"><h1>Orbit Duel</h1><p>Fichier index.html manquant sur le serveur.</p>');
 }
 
 // ---------- Réglages de jeu ----------
