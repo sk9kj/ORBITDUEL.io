@@ -86,7 +86,6 @@ label{display:flex;gap:10px;align-items:center}
     <input id="user" placeholder="Pseudo (3 à 16 caractères)" maxlength="16" autocomplete="username">
     <input id="pass" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
     <button id="authBtn" class="primary full">SE CONNECTER</button>
-    <button id="guestBtn" class="ghost full">🎮 Tester sans compte</button>
     <p id="authErr" class="err"></p>
   </div>
 </section>
@@ -279,16 +278,7 @@ async function doAuth() {
 }
 $('#authBtn').onclick = doAuth;
 $('#pass').onkeydown = e => { if (e.key === 'Enter') doAuth(); };
-$('#guestBtn').onclick = async () => {
-  $('#authErr').textContent = '';
-  try {
-    const r = await fetch('/api/guest', { method: 'POST' });
-    const d = await r.json();
-    if (d.error) { $('#authErr').textContent = d.error; return; }
-    token = d.token; localStorage.setItem('od_token', token);
-    connect();
-  } catch (_) { $('#authErr').textContent = 'Serveur injoignable.'; }
-};
+
 
 function connect() {
   if (ws) { ws.onclose = null; ws.close(); }

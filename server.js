@@ -8,9 +8,14 @@ const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const ALLOW_GUEST = process.env.ALLOW_GUEST !== 'false'; // mode test : ALLOW_GUEST=false pour le désactiver
 const DB_FILE = path.join(__dirname, 'data', 'users.json');
-const INDEX_HTML = fs.readFileSync(path.join(__dirname, 'public', 'index.html'));
+let INDEX_HTML;
+try {
+  INDEX_HTML = fs.readFileSync(path.join(__dirname, 'public', 'index.html'));
+} catch (e) {
+  console.error('ERREUR : public/index.html introuvable dans le dépôt. Ajoutez le dossier public/ avec index.html puis redéployez.');
+  INDEX_HTML = Buffer.from('<!doctype html><meta charset="utf-8"><h1>Orbit Duel</h1><p>Fichier public/index.html manquant sur le serveur.</p>');
+}
 
 // ---------- Réglages de jeu ----------
 const TICK = 1 / 30;
@@ -100,24 +105,16 @@ function login(username, password) {
   return issue(u);
 }
 
-// Compte test créé en un clic (pseudo et mot de passe aléatoires, sans formulaire)
-function guest() {
-  const name = 'Test_' + crypto.randomBytes(3).toString('hex');
-  return register(name, crypto.randomBytes(12).toString('hex'));
-}
-
 // ---------- HTTP (page + API de comptes) ----------
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
-  if (req.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login' || url.pathname === '/api/guest')) {
+  if (req.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login')) {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 4096) req.destroy(); });
     req.on('end', () => {
       let d = {};
       try { d = JSON.parse(body); } catch (_) { /* corps invalide */ }
-      let r;
-      if (url.pathname === '/api/guest') r = ALLOW_GUEST ? guest() : { status: 403, error: 'Mode test désactivé.' };
-      else r = url.pathname === '/api/register' ? register(d.username, d.password) : login(d.username, d.password);
+      const r = url.pathname === '/api/register' ? register(d.username, d.password) : login(d.username, d.password);
       res.writeHead(r.status || 200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(r));
     });
